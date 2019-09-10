@@ -1,4 +1,4 @@
-module github.com/pion/turn
+module github.com/miratronix/turn
 
 go 1.12
 
