@@ -88,7 +88,15 @@ func (t *Transaction) WriteResult(res TransactionResult) bool {
 
 // WaitForResult waits for the transaction result
 func (t *Transaction) WaitForResult() TransactionResult {
-	return <-t.resultCh
+	result := <-t.resultCh
+
+	// If the channel is closed while we're waiting for the result, we'll get a mostly well-formed transaction because
+	// the channel is by-value. However, the pointer field inside (Msg) will be nil in that case, since that's a pointer.
+	if result.Msg == nil {
+		result.Msg = &stun.Message{}
+	}
+
+	return result
 }
 
 // Close closes the transaction

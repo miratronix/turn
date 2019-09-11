@@ -69,7 +69,6 @@ type UDPConn struct {
 	refreshPermsTimer *PeriodicTimer        // thread-safe
 	mutex             sync.RWMutex          // thread-safe
 	log               logging.LeveledLogger // read-only
-	closeLock         sync.Mutex            // Lock for preventing binding while closing
 }
 
 // NewUDPConn creates a new instance of UDPConn
@@ -278,11 +277,6 @@ func (c *UDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 // Close closes the connection.
 // Any blocked ReadFrom or WriteTo operations will be unblocked and return errors.
 func (c *UDPConn) Close() error {
-
-	// Lock so we don't close in the middle of binding
-	c.closeLock.Lock()
-	c.closeLock.Unlock()
-
 	c.refreshAllocTimer.Stop()
 	c.refreshPermsTimer.Stop()
 
@@ -499,11 +493,6 @@ func (c *UDPConn) refreshPermissions() {
 }
 
 func (c *UDPConn) bind(b *binding) error {
-
-	// Lock so we don't try to bind while closing
-	c.closeLock.Lock()
-	defer c.closeLock.Unlock()
-
 	setters := []stun.Setter{
 		stun.TransactionID,
 		stun.NewType(stun.MethodChannelBind, stun.ClassRequest),
